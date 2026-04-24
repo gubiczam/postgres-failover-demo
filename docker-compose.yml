@@ -1,0 +1,35 @@
+services:
+  postgres-a:
+    image: postgres:15
+    container_name: postgres-a
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-a:/var/lib/postgresql/data
+    networks:
+      - pgnet
+
+  postgres-b:
+    image: postgres:15
+    container_name: postgres-b
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: appdb
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata-b:/var/lib/postgresql/data
+    networks:
+      - pgnet
+
+volumes:
+  pgdata-a:
+  pgdata-b:
+
+networks:
+  pgnet:
