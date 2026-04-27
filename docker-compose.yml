@@ -1,7 +1,6 @@
 services:
-  postgres-a:
+  postgres-master:
     image: postgres:15
-    container_name: postgres-a
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -9,13 +8,15 @@ services:
     ports:
       - "5433:5432"
     volumes:
-      - pgdata-a:/var/lib/postgresql/data
-    networks:
-      - pgnet
+      - pgdata-master:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d appdb"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
 
-  postgres-b:
+  postgres-slave:
     image: postgres:15
-    container_name: postgres-b
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -23,13 +24,32 @@ services:
     ports:
       - "5434:5432"
     volumes:
-      - pgdata-b:/var/lib/postgresql/data
-    networks:
-      - pgnet
+      - pgdata-slave:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d appdb"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  writer:
+    build: ./app
+    profiles:
+      - writer
+    environment:
+      DB_HOSTS: postgres-master,postgres-slave
+      DB_PORT: 5432
+      DB_NAME: appdb
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      WRITE_INTERVAL_SECONDS: 1
+      RETRY_INITIAL_DELAY_SECONDS: 1
+      RETRY_MAX_DELAY_SECONDS: 5
+    depends_on:
+      postgres-master:
+        condition: service_healthy
+      postgres-slave:
+        condition: service_healthy
 
 volumes:
-  pgdata-a:
-  pgdata-b:
-
-networks:
-  pgnet:
+  pgdata-master:
+  pgdata-slave:
